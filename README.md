@@ -32,7 +32,7 @@ Add this to the client's MCP configuration (for Claude Desktop: `claude_desktop_
 claude mcp add winevoyager -e WINEVOYAGER_API_KEY=your-own-key -- npx -y winevoyager-mcp
 ```
 
-Requires Node.js 18 or later.
+Requires Node.js 20 or later.
 
 ## Tools
 
