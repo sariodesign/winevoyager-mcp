@@ -1,0 +1,45 @@
+{
+  "name": "winevoyager-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for the WineVoyager API: verified data on Italian DOCG and DOC wine denominations, read from the official MASAF disciplinari.",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "bin": {
+    "winevoyager-mcp": "dist/index.js"
+  },
+  "main": "dist/server.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "start": "node dist/index.js",
+    "inspect": "npx @modelcontextprotocol/inspector node dist/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "wine",
+    "italy",
+    "docg",
+    "doc",
+    "appellations"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.1"
+  }
+}
