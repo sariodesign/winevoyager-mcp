@@ -47,6 +47,13 @@ export interface ListQuery {
     color?: string
 }
 
+export interface RegionInfo {
+    name: string
+    count: number
+    /** Provinces of this region named by at least one denomination. */
+    provinces: string[]
+}
+
 export interface ApiResult<T> {
     data: T
     accessLevel: AccessLevel
@@ -122,6 +129,12 @@ export class WineVoyagerClient {
         )
         const { access_level, ...denomination } = body
         return this.wrap(denomination as Denomination, access_level)
+    }
+
+    /** Regions with their denomination count and provinces. Basic data: no access level. */
+    async listRegions(): Promise<RegionInfo[]> {
+        const body = await this.request<{ regions: RegionInfo[] }>('/v1/regions')
+        return body.regions
     }
 
     private wrap<T>(data: T, accessLevel: AccessLevel): ApiResult<T> {

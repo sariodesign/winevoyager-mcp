@@ -98,9 +98,9 @@ describe('MCP server', () => {
         const r = await call('list_regions', {})
         expect(r.json.regions).toHaveLength(20)
         const byName = Object.fromEntries(r.json.regions.map((x: { name: string }) => [x.name, x]))
-        expect(byName.Piemonte).toEqual({ name: 'Piemonte', denominations: 1, docg: 1, doc: 0 })
-        expect(byName.Toscana).toEqual({ name: 'Toscana', denominations: 1, docg: 0, doc: 1 })
-        expect(byName.Veneto).toEqual({ name: 'Veneto', denominations: 0, docg: 0, doc: 0 })
+        expect(byName.Piemonte).toEqual({ name: 'Piemonte', denominations: 1, docg: 1, doc: 0, provinces: ['Cuneo'] })
+        expect(byName.Toscana).toEqual({ name: 'Toscana', denominations: 1, docg: 0, doc: 1, provinces: ['Siena'] })
+        expect(byName.Veneto).toEqual({ name: 'Veneto', denominations: 0, docg: 0, doc: 0, provinces: [] })
         expect(r.json.attribution).toMatch(/^Data by WineVoyager/)
     })
 
