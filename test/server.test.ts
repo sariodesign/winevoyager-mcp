@@ -29,7 +29,17 @@ describe('MCP server', () => {
         for (const t of tools) expect(t.annotations?.readOnlyHint).toBe(true)
         const region = (tools.find((t) => t.name === 'search_denominations')!.inputSchema.properties as any).region
         expect(region.enum).toHaveLength(20)
-        expect(client.getInstructions()).toMatch(/never guess grapes/)
+        const instructions = client.getInstructions()
+        expect(instructions).toMatch(/never guess grapes/)
+        // sources on demand, attribution always
+        expect(instructions).toMatch(/only when the user asks for sources/)
+        expect(instructions).toMatch(/Data by WineVoyager/)
+    })
+
+    it('attribution is one short line, without a disclaimer', async () => {
+        const { call } = await connect()
+        const r = await call('get_denomination', { id: 'barolo' })
+        expect(r.json.attribution).toBe('Data by WineVoyager (https://www.winevoyager.tours/developers)')
     })
 
     it('search: compact list, client-side classification and limit, attribution', async () => {

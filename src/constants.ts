@@ -7,7 +7,7 @@ export const DEVELOPERS_URL = 'https://www.winevoyager.tours/developers'
 export const SUPPORT_EMAIL = 'support@winevoyager.tours'
 
 /** CC-BY 4.0 attribution required wherever the data is used. */
-export const ATTRIBUTION = `Data by WineVoyager (${DEVELOPERS_URL}). Always check the official disciplinare in force.`
+export const ATTRIBUTION = `Data by WineVoyager (${DEVELOPERS_URL})`
 
 /** The 20 Italian regions, spelled as the API stores them. The `region` filter is an exact match. */
 export const REGIONS = [
