@@ -1,0 +1,31 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "tours.winevoyager/mcp",
+  "title": "WineVoyager",
+  "description": "Verified data on Italian DOCG and DOC wines: grapes, percentages, types, from official sources.",
+  "websiteUrl": "https://www.winevoyager.tours/developers",
+  "repository": {
+    "url": "https://github.com/sariodesign/winevoyager-mcp",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "winevoyager-mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "WINEVOYAGER_API_KEY",
+          "description": "Optional personal WineVoyager API key for full records (types and grapes of every denomination). Without it the server works at the basic level.",
+          "isRequired": false,
+          "isSecret": true,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}

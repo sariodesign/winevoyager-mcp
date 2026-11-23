@@ -3,3 +3,7 @@ dist/
 .env
 .env.*
 *.log
+
+# MCP registry signing key and tokens: never commit
+*.pem
+.mcpregistry_*
