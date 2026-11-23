@@ -83,6 +83,8 @@ export const fakeApi: Route = (url, key) => {
     if (color) list = list.filter((d) => d.colors.includes(color))
     const region = url.searchParams.get('region')
     if (region) list = list.filter((d) => d.regions.includes(region))
+    const province = url.searchParams.get('province')
+    if (province) list = list.filter((d) => d.provinces.some((p) => p.toLowerCase() === province.toLowerCase()))
     const name = url.searchParams.get('name')
     if (name) list = list.filter((d) => d.name.toLowerCase().includes(name.toLowerCase()))
     return { status: 200, body: { denominations: list, count: list.length, access_level: level } }

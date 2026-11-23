@@ -1,6 +1,6 @@
 {
   "name": "winevoyager-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MCP server for the WineVoyager API: verified data on Italian DOCG and DOC wine denominations, read from the official MASAF disciplinari.",
   "mcpName": "tours.winevoyager/mcp",
   "type": "module",
