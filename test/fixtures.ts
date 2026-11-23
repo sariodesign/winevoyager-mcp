@@ -69,6 +69,20 @@ type Route = (url: URL, key: string | undefined) => { status: number; body: unkn
 export const fakeApi: Route = (url, key) => {
     const level = key === VALID_KEY ? 'full' : 'basic'
     const data = level === 'full' ? FULL : BASIC
+    if (url.pathname === '/v1/regions') {
+        // province -> region is known to the API; the fixtures are single-region
+        const regions = new Map<string, { name: string; count: number; provinces: Set<string> }>()
+        for (const d of FULL) {
+            for (const r of d.regions) {
+                const e = regions.get(r) ?? { name: r, count: 0, provinces: new Set<string>() }
+                e.count++
+                d.provinces.forEach((p) => e.provinces.add(p))
+                regions.set(r, e)
+            }
+        }
+        const list = [...regions.values()].map((e) => ({ ...e, provinces: [...e.provinces] }))
+        return { status: 200, body: { regions: list, count: list.length } }
+    }
     const m = url.pathname.match(/^\/v1\/denominations(?:\/(.+))?$/)
     if (!m) return { status: 404, body: { error: 'Not Found' } }
     if (m[1]) {

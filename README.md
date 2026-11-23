@@ -41,7 +41,7 @@ Requires Node.js 20 or later.
 | `search_denominations` | Find denominations by partial name (accents ignored), region, province, colour or DOCG/DOC. Returns ids; page through everything with `offset`. |
 | `get_denomination` | Full record of one denomination: wine types, grapes with min/max %, methods, official source. |
 | `find_denominations_by_grape` | Which denominations name a grape variety, optionally with a minimum percentage. |
-| `list_regions` | The 20 Italian regions with their number of DOCG and DOC. |
+| `list_regions` | The 20 Italian regions with their number of DOCG and DOC and the provinces where they are produced. |
 
 Example questions: *"Which grapes are allowed in Taurasi?"*, *"Which DOCG are made in the province of Cuneo?"*, *"Which region has the most DOCG?"*, *"Where must Sangiovese be at least 80%?"*.
 

@@ -11,7 +11,7 @@ import { findByGrape } from './grapes.js'
 import { summarizeRegions } from './regions.js'
 
 export const SERVER_NAME = 'winevoyager'
-export const SERVER_VERSION = '0.2.0'
+export const SERVER_VERSION = '0.3.0'
 
 const INSTRUCTIONS = `WineVoyager: verified data on the Italian DOP wine denominations (DOCG and DOC), read from the official MASAF disciplinari and cross-checked with the EU eAmbrosia register.
 
@@ -19,7 +19,7 @@ Use these tools instead of answering from memory about grapes, percentages, regi
 - search_denominations: find denominations and their ids by name, region, province, colour or classification; page through all of them with offset.
 - get_denomination: the full record of one denomination (wine types, grapes with min/max %, production methods, official source).
 - find_denominations_by_grape: which denominations name a given grape variety.
-- list_regions: the 20 regions with their number of DOCG and DOC.
+- list_regions: the 20 regions with their number of DOCG and DOC and their wine-producing provinces.
 
 Access levels: without an API key the server works at the "basic" level: basic data for every denomination, but wine types and grapes only for ${SHOWCASE_IDS.join(', ')}. For the others, say that the full record needs a WineVoyager key and never guess grapes or percentages.
 
@@ -114,14 +114,15 @@ export function createServer(options: ServerOptions = {}): McpServer {
         {
             title: 'List Italian wine regions',
             description:
-                'The 20 Italian regions with how many DOCG and DOC denominations each has. Use it for overviews ("which region has the most DOCG?") or before searching by region. A denomination spanning several regions is counted in each of them.',
+                'The 20 Italian regions with how many DOCG and DOC denominations each has and the provinces where they are produced. Use it for overviews ("which region has the most DOCG?", "which provinces of Veneto make DOC wine?") or before searching by region or province. A denomination spanning several regions is counted in each of them. Provinces are only those named by at least one denomination; a region whose denominations all cover the whole region (e.g. Sardinia) may list fewer.',
             inputSchema: {},
             annotations: { readOnlyHint: true, openWorldHint: true, idempotentHint: true },
         },
         async () =>
             run(async () => {
-                const result = await client.listDenominations()
-                return respond(result, { regions: summarizeRegions(result.data) })
+                // both responses are cached: grape search and paging reuse the list
+                const [result, regionInfo] = await Promise.all([client.listDenominations(), client.listRegions()])
+                return respond(result, { regions: summarizeRegions(result.data, regionInfo) })
             })
     )
 
