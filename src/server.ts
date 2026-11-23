@@ -1,4 +1,4 @@
-// MCP server: three tools over the WineVoyager API.
+// MCP server: four tools over the WineVoyager API.
 // Stateless apart from the client's short in-memory cache. Transport-agnostic:
 // `index.ts` connects it to stdio; a future HTTP entrypoint can reuse it.
 
@@ -8,16 +8,18 @@ import { z } from 'zod'
 import { ApiError, type ApiResult, type Denomination, WineVoyagerClient } from './client.js'
 import { ATTRIBUTION, CLASSIFICATIONS, COLORS, REGIONS, SHOWCASE_IDS, SUPPORT_EMAIL } from './constants.js'
 import { findByGrape } from './grapes.js'
+import { summarizeRegions } from './regions.js'
 
 export const SERVER_NAME = 'winevoyager'
-export const SERVER_VERSION = '0.1.0'
+export const SERVER_VERSION = '0.2.0'
 
 const INSTRUCTIONS = `WineVoyager: verified data on the Italian DOP wine denominations (DOCG and DOC), read from the official MASAF disciplinari and cross-checked with the EU eAmbrosia register.
 
 Use these tools instead of answering from memory about grapes, percentages, regions, provinces or wine types of Italian denominations.
-- search_denominations: find denominations and their ids by name, region, colour or classification.
+- search_denominations: find denominations and their ids by name, region, province, colour or classification; page through all of them with offset.
 - get_denomination: the full record of one denomination (wine types, grapes with min/max %, production methods, official source).
 - find_denominations_by_grape: which denominations name a given grape variety.
+- list_regions: the 20 regions with their number of DOCG and DOC.
 
 Access levels: without an API key the server works at the "basic" level: basic data for every denomination, but wine types and grapes only for ${SHOWCASE_IDS.join(', ')}. For the others, say that the full record needs a WineVoyager key and never guess grapes or percentages.
 
@@ -56,34 +58,70 @@ export function createServer(options: ServerOptions = {}): McpServer {
         {
             title: 'Search Italian wine denominations',
             description:
-                'Find Italian DOCG/DOC wine denominations by partial name (accents and case ignored: "ciro" finds Cirò), region, colour or classification. Returns a compact list with the id to pass to get_denomination. Use it first when you do not know the exact id. All filters are optional and combined with AND.',
+                'Find Italian DOCG/DOC wine denominations by partial name (accents and case ignored: "ciro" finds Cirò), region, province, colour or classification. Returns a compact list with the id to pass to get_denomination. Use it first when you do not know the exact id. All filters are optional and combined with AND. Without filters it lists every denomination: page through with offset.',
             inputSchema: {
                 name: z.string().min(1).max(100).optional().describe('Part of the denomination name, e.g. "Chianti", "Montepulciano".'),
                 region,
+                province: z
+                    .string()
+                    .min(2)
+                    .max(60)
+                    .optional()
+                    .describe(
+                        'Italian province, in Italian, e.g. "Cuneo", "Bolzano", "Reggio Emilia". Also matches denominations whose zone is the whole region the province belongs to.'
+                    ),
                 color,
                 classification,
                 limit: z.number().int().min(1).max(100).default(20).describe('Maximum results to return (default 20).'),
+                offset: z.number().int().min(0).default(0).describe('Results to skip, for paging (default 0).'),
             },
             annotations: { readOnlyHint: true, openWorldHint: true, idempotentHint: true },
         },
-        async ({ name, region, color, classification, limit }) =>
+        async ({ name, region, province, color, classification, limit, offset }) =>
             run(async () => {
-                const result = await client.listDenominations({ name, region, color })
+                const result = await client.listDenominations({ name, region, province, color })
                 const all = classification ? result.data.filter((d) => d.classification === classification) : result.data
-                const denominations = all.slice(0, limit).map((d) => ({
+                const denominations = all.slice(offset, offset + limit).map((d) => ({
                     id: d.id,
                     name: d.name,
                     classification: d.classification,
                     regions: d.regions,
+                    provinces: d.provinces,
                     colors: d.colors,
                     full_record: d.types !== undefined,
                 }))
-                return respond(result, {
-                    total: all.length,
-                    returned: denominations.length,
-                    ...(all.length > denominations.length && { truncated: 'Narrow the filters or raise limit to see more.' }),
-                    denominations,
-                })
+                const nextOffset = offset + denominations.length
+                const notes =
+                    province && all.length === 0 && !name && !region && !color && !classification
+                        ? `No denomination lists the province "${province}". Check the spelling: use the Italian name, e.g. "Bolzano", not "Bozen" or "South Tyrol".`
+                        : undefined
+                return respond(
+                    result,
+                    {
+                        total: all.length,
+                        offset,
+                        returned: denominations.length,
+                        ...(nextOffset < all.length && { next_offset: nextOffset }),
+                        denominations,
+                    },
+                    notes
+                )
+            })
+    )
+
+    server.registerTool(
+        'list_regions',
+        {
+            title: 'List Italian wine regions',
+            description:
+                'The 20 Italian regions with how many DOCG and DOC denominations each has. Use it for overviews ("which region has the most DOCG?") or before searching by region. A denomination spanning several regions is counted in each of them.',
+            inputSchema: {},
+            annotations: { readOnlyHint: true, openWorldHint: true, idempotentHint: true },
+        },
+        async () =>
+            run(async () => {
+                const result = await client.listDenominations()
+                return respond(result, { regions: summarizeRegions(result.data) })
             })
     )
 

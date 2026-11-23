@@ -42,6 +42,8 @@ export interface Denomination {
 export interface ListQuery {
     name?: string
     region?: string
+    /** Matches denominations listing the province, plus whole-region ones of its region. */
+    province?: string
     color?: string
 }
 

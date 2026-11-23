@@ -4,7 +4,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 
-const expected = ['find_denominations_by_grape', 'get_denomination', 'search_denominations']
+const expected = ['find_denominations_by_grape', 'get_denomination', 'list_regions', 'search_denominations']
 
 const client = new Client({ name: 'check-stdio', version: '0.0.0' })
 await client.connect(new StdioClientTransport({ command: process.execPath, args: ['dist/index.js'], stderr: 'ignore' }))

@@ -25,7 +25,12 @@ describe('MCP server', () => {
     it('exposes three read-only tools and instructions', async () => {
         const { client } = await connect()
         const { tools } = await client.listTools()
-        expect(tools.map((t) => t.name).sort()).toEqual(['find_denominations_by_grape', 'get_denomination', 'search_denominations'])
+        expect(tools.map((t) => t.name).sort()).toEqual([
+            'find_denominations_by_grape',
+            'get_denomination',
+            'list_regions',
+            'search_denominations',
+        ])
         for (const t of tools) expect(t.annotations?.readOnlyHint).toBe(true)
         const region = (tools.find((t) => t.name === 'search_denominations')!.inputSchema.properties as any).region
         expect(region.enum).toHaveLength(20)
@@ -48,15 +53,54 @@ describe('MCP server', () => {
         expect(r.json.access_level).toBe('basic')
         expect(r.json.total).toBe(2)
         expect(r.json.returned).toBe(1)
-        expect(r.json.truncated).toBeDefined()
+        expect(r.json.next_offset).toBe(1)
         expect(r.json.denominations[0]).toEqual({
             id: 'vino-di-prova',
             name: 'Vino di Prova',
             classification: 'DOC',
             regions: ['Toscana'],
+            provinces: ['Siena'],
             colors: ['red', 'white'],
             full_record: false,
         })
+        expect(r.json.attribution).toMatch(/^Data by WineVoyager/)
+    })
+
+    it('search: passes province to the API', async () => {
+        const { call, calls } = await connect()
+        const r = await call('search_denominations', { province: 'Crotone' })
+        expect(calls[0]!.url).toBe('https://api.test/v1/denominations?province=Crotone')
+        expect(r.json.denominations.map((d: { id: string }) => d.id)).toEqual(['cirò'])
+        expect(r.json.notes).toBeUndefined()
+    })
+
+    it('search: an unknown province gets a spelling hint', async () => {
+        const { call } = await connect()
+        const r = await call('search_denominations', { province: 'Bozen' })
+        expect(r.json.total).toBe(0)
+        expect(r.json.notes.join(' ')).toMatch(/Italian name/)
+    })
+
+    it('search: pages with offset and next_offset', async () => {
+        const { call, calls } = await connect()
+        const first = await call('search_denominations', { limit: 2 })
+        expect(first.json.denominations.map((d: { id: string }) => d.id)).toEqual(['barolo', 'vino-di-prova'])
+        expect(first.json.next_offset).toBe(2)
+        const second = await call('search_denominations', { limit: 2, offset: 2 })
+        expect(second.json.denominations.map((d: { id: string }) => d.id)).toEqual(['cirò'])
+        expect(second.json.next_offset).toBeUndefined()
+        // same list, served from the in-memory cache
+        expect(calls).toHaveLength(1)
+    })
+
+    it('list_regions: all 20 regions with DOCG/DOC counts', async () => {
+        const { call } = await connect()
+        const r = await call('list_regions', {})
+        expect(r.json.regions).toHaveLength(20)
+        const byName = Object.fromEntries(r.json.regions.map((x: { name: string }) => [x.name, x]))
+        expect(byName.Piemonte).toEqual({ name: 'Piemonte', denominations: 1, docg: 1, doc: 0 })
+        expect(byName.Toscana).toEqual({ name: 'Toscana', denominations: 1, docg: 0, doc: 1 })
+        expect(byName.Veneto).toEqual({ name: 'Veneto', denominations: 0, docg: 0, doc: 0 })
         expect(r.json.attribution).toMatch(/^Data by WineVoyager/)
     })
 
