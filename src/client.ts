@@ -98,7 +98,7 @@ export class WineVoyagerClient {
 
     constructor(options: ClientOptions = {}) {
         this.apiKey = options.apiKey?.trim() || undefined
-        this.baseUrl = (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, '')
+        this.baseUrl = checkBaseUrl(options.baseUrl ?? DEFAULT_BASE_URL)
         this.cacheTtlMs = options.cacheTtlMs ?? 5 * 60 * 1000
         this.timeoutMs = options.timeoutMs ?? 10_000
         this.fetchImpl = options.fetch ?? globalThis.fetch
@@ -153,6 +153,9 @@ export class WineVoyagerClient {
         try {
             response = await this.fetchImpl(`${this.baseUrl}${path}`, {
                 headers,
+                // Never follow redirects: fetch would resend x-api-key to the new
+                // location, even on another domain (only Authorization is stripped).
+                redirect: 'manual',
                 signal: AbortSignal.timeout(this.timeoutMs),
             })
         } catch (error) {
@@ -160,6 +163,12 @@ export class WineVoyagerClient {
             throw new ApiError(0, `The WineVoyager API ${reason}. Try again later.`)
         }
 
+        if ((response.status >= 300 && response.status < 400) || response.type === 'opaqueredirect') {
+            throw new ApiError(
+                response.status,
+                `The WineVoyager API answered with a redirect, which is not followed to keep the API key safe. Try again later; if it persists, write to ${SUPPORT_EMAIL}.`
+            )
+        }
         if (!response.ok) throw new ApiError(response.status, await errorMessage(response))
 
         const body = (await response.json()) as T
@@ -172,6 +181,31 @@ export class WineVoyagerClient {
         const now = this.now()
         for (const [k, v] of this.cache) if (v.expires <= now) this.cache.delete(k)
     }
+}
+
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
+
+/**
+ * The API URL carries the user's key, so only https is accepted (plain http only
+ * for a local development server). Returns the URL without trailing slashes.
+ */
+export function checkBaseUrl(raw: string): string {
+    let url: URL
+    try {
+        url = new URL(raw)
+    } catch {
+        throw new Error('Invalid WINEVOYAGER_API_URL: not a valid URL.')
+    }
+    const local = LOCAL_HOSTS.has(url.hostname)
+    if (url.protocol !== 'https:' && !(url.protocol === 'http:' && local)) {
+        throw new Error(
+            `Refusing WineVoyager API URL "${url.origin}": it must use https (plain http is allowed only for localhost), because requests carry the API key.`
+        )
+    }
+    if (url.username || url.password || url.search || url.hash) {
+        throw new Error(`Invalid WineVoyager API URL "${url.origin}": use a plain base URL, e.g. https://api.winevoyager.tours.`)
+    }
+    return url.href.replace(/\/+$/, '')
 }
 
 async function errorMessage(response: Response): Promise<string> {
