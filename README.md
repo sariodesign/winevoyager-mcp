@@ -1,5 +1,7 @@
 # WineVoyager MCP server
 
+[![WineVoyager MCP server](https://glama.ai/mcp/servers/sariodesign/winevoyager-mcp/badges/score.svg)](https://glama.ai/mcp/servers/sariodesign/winevoyager-mcp)
+
 An [MCP](https://modelcontextprotocol.io) server that lets AI assistants answer questions about **Italian DOP wine denominations (DOCG and DOC)** with verified data instead of guesses: regions, provinces, colours, wine types, grapes with minimum and maximum percentages, production methods and the official source of each record.
 
 The data comes from the [WineVoyager API](https://api.winevoyager.tours/docs), read from the official MASAF disciplinari and cross-checked with the EU eAmbrosia register.
