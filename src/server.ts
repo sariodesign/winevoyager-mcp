@@ -11,7 +11,7 @@ import { findByGrape } from './grapes.js'
 import { summarizeRegions } from './regions.js'
 
 export const SERVER_NAME = 'winevoyager'
-export const SERVER_VERSION = '0.3.1'
+export const SERVER_VERSION = '0.3.2'
 
 const INSTRUCTIONS = `WineVoyager: verified data on the Italian DOP wine denominations (DOCG and DOC), read from the official MASAF disciplinari and cross-checked with the EU eAmbrosia register.
 
@@ -58,7 +58,7 @@ export function createServer(options: ServerOptions = {}): McpServer {
         {
             title: 'Search Italian wine denominations',
             description:
-                'Find Italian DOCG/DOC wine denominations by partial name (accents and case ignored: "ciro" finds Cirò), region, province, colour or classification. Returns a compact list with the id to pass to get_denomination. Use it first when you do not know the exact id. All filters are optional and combined with AND. Without filters it lists every denomination: page through with offset.',
+                'Find Italian DOCG/DOC wine denominations by partial name (accents and case ignored: "ciro" finds Cirò), region, province, colour or classification. Use it when the question starts from a name or a place, or to get the id for get_denomination; for questions about a grape variety use find_denominations_by_grape (this tool cannot filter by grape), for per-region counts use list_regions. All filters are optional and combined with AND; without filters it lists every denomination. Returns total, returned, next_offset (present while more results remain: pass it as offset) and denominations: id, name, classification, regions, provinces, colors and full_record (false when grapes and wine types need an API key). No match is not an error: total is 0.',
             inputSchema: {
                 name: z.string().min(1).max(100).optional().describe('Part of the denomination name, e.g. "Chianti", "Montepulciano".'),
                 region,
@@ -114,7 +114,7 @@ export function createServer(options: ServerOptions = {}): McpServer {
         {
             title: 'List Italian wine regions',
             description:
-                'The 20 Italian regions with how many DOCG and DOC denominations each has and the provinces where they are produced. Use it for overviews ("which region has the most DOCG?", "which provinces of Veneto make DOC wine?") or before searching by region or province. A denomination spanning several regions is counted in each of them. Provinces are only those named by at least one denomination; a region whose denominations all cover the whole region (e.g. Sardinia) may list fewer.',
+                'The 20 Italian regions with how many DOCG and DOC denominations each has and the provinces where they are produced. Use it for overviews ("which region has the most DOCG?", "which provinces of Veneto make DOC wine?") or before searching by region or province. Returns regions, sorted alphabetically, each with name, denominations (total), docg, doc and provinces (Italian names, usable as the province filter of search_denominations). A denomination spanning several regions is counted in each of them, so the totals add up to more than the number of denominations. Provinces are only those named by at least one denomination; a region whose denominations all cover the whole region (e.g. Sardinia) may list fewer. Counts are complete at every access level.',
             inputSchema: {},
             annotations: { readOnlyHint: true, openWorldHint: true, idempotentHint: true },
         },
@@ -131,7 +131,7 @@ export function createServer(options: ServerOptions = {}): McpServer {
         {
             title: 'Get an Italian wine denomination',
             description:
-                'Full record of one Italian DOCG/DOC denomination by id (e.g. "barolo", "brunello-di-montalcino"): regions, provinces, recognition year, colours, wine types with the grapes the disciplinare names and their min/max percentages, production methods (sparkling, passito, fortified), parent/child denominations and a source object for verification (cite it only when the user needs it). A grape entry with any_of is a group whose percentage applies to the group as a whole. If you do not know the id, call search_denominations first.',
+                'Full record of one Italian DOCG/DOC denomination by id (e.g. "barolo", "brunello-di-montalcino"): regions, provinces, recognition year, colours, wine types with the grapes the disciplinare names and their min/max percentages, production methods (sparkling, passito, fortified), parent/child denominations and a source object (cite it only when the user needs it). A grape entry with any_of is a group whose percentage applies to the group as a whole. Without an API key, wine types, grapes and methods are only included for the showcase denominations: full_record is false otherwise. If you do not know the id, call search_denominations first; an unknown id returns an error, not an empty record.',
             inputSchema: {
                 id: z
                     .string()
@@ -156,7 +156,7 @@ export function createServer(options: ServerOptions = {}): McpServer {
         {
             title: 'Find Italian wine denominations by grape',
             description:
-                'Which Italian DOCG/DOC denominations, and which of their wine types, name a grape variety in the disciplinare, with min/max percentages. Matches whole words, accents ignored: "Trebbiano" also finds "Trebbiano toscano". Use min_percentage for questions like "where must Sangiovese be at least 80%?". Without an API key only the showcase denominations can be searched, so results are incomplete.',
+                'Which Italian DOCG/DOC denominations, and which of their wine types, name a grape variety in the disciplinare, with min/max percentages. Use it whenever the question starts from a grape ("where is Nebbiolo used?"); use search_denominations to find denominations by name or place, get_denomination for the full blend of one denomination. Matches whole words, accents ignored: "Trebbiano" also finds "Trebbiano toscano". region, color and classification narrow the denominations searched, combined with AND. Use min_percentage for questions like "where must Sangiovese be at least 80%?": it skips any_of group entries, whose minimum is shared by several grapes. Returns results: id, name, classification, regions and matches (type, grape, group when part of an any_of group, min, max). Without an API key only the showcase denominations can be searched: denominations_searched is then lower than denominations_in_scope and the results are incomplete.',
             inputSchema: {
                 grape: z.string().min(2).max(60).describe('Grape variety in Italian, e.g. "Nebbiolo", "Sangiovese", "Glera".'),
                 region,
@@ -167,7 +167,7 @@ export function createServer(options: ServerOptions = {}): McpServer {
                     .min(0)
                     .max(100)
                     .optional()
-                    .describe('Keep only types where this grape alone must be at least this percentage.'),
+                    .describe('0-100. Keep only types where this grape alone must be at least this percentage; omit to list every type that names the grape.'),
             },
             annotations: { readOnlyHint: true, openWorldHint: true, idempotentHint: true },
         },
