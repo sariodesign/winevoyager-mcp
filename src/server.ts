@@ -11,7 +11,7 @@ import { findByGrape } from './grapes.js'
 import { summarizeRegions } from './regions.js'
 
 export const SERVER_NAME = 'winevoyager'
-export const SERVER_VERSION = '0.3.2'
+export const SERVER_VERSION = '0.3.3'
 
 const INSTRUCTIONS = `WineVoyager: verified data on the Italian DOP wine denominations (DOCG and DOC), read from the official MASAF disciplinari and cross-checked with the EU eAmbrosia register.
 
@@ -58,7 +58,12 @@ export function createServer(options: ServerOptions = {}): McpServer {
         {
             title: 'Search Italian wine denominations',
             description:
-                'Find Italian DOCG/DOC wine denominations by partial name (accents and case ignored: "ciro" finds Cirò), region, province, colour or classification. Use it when the question starts from a name or a place, or to get the id for get_denomination; for questions about a grape variety use find_denominations_by_grape (this tool cannot filter by grape), for per-region counts use list_regions. All filters are optional and combined with AND; without filters it lists every denomination. Returns total, returned, next_offset (present while more results remain: pass it as offset) and denominations: id, name, classification, regions, provinces, colors and full_record (false when grapes and wine types need an API key). No match is not an error: total is 0.',
+                [
+                    'Find Italian DOCG/DOC wine denominations by partial name (accents and case ignored: "ciro" finds Cirò), region, province, colour or classification. Use it when the question starts from a name or a place, or to get the id for get_denomination; for a grape variety use find_denominations_by_grape (this tool cannot filter by grape), for per-region counts use list_regions.',
+                    'Parameters: all optional and combined with AND; without filters it lists every denomination. name matches anywhere in the name ("Montepulciano" also finds "Vino Nobile di Montepulciano"). province takes the Italian name ("Bolzano", not "South Tyrol"; list_regions gives the valid ones) and also returns denominations whose zone is the whole region. limit caps one page (1-100, default 20); to page, pass the returned next_offset as offset (an offset past total returns an empty page).',
+                    'Returns total, returned, next_offset (only while more results remain) and denominations: id, name, classification, regions, provinces, colors, full_record. No match is not an error: total is 0, with a spelling hint for an unknown province.',
+                    'Access: read-only, no API key needed to search every denomination. full_record is true for all of them only with a valid WINEVOYAGER_API_KEY (an invalid or expired key falls back to the basic level with a note), otherwise only for the showcase ones. Rate limit about 30 requests per minute per IP; responses are cached for 5 minutes, so paging adds no requests.',
+                ].join('\n\n'),
             inputSchema: {
                 name: z.string().min(1).max(100).optional().describe('Part of the denomination name, e.g. "Chianti", "Montepulciano".'),
                 region,
