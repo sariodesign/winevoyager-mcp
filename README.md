@@ -84,4 +84,6 @@ node scripts/smoke.mjs   # real stdio client against the live API
 npm run inspect   # MCP Inspector
 ```
 
-Environment variables: `WINEVOYAGER_API_KEY` (optional), `WINEVOYAGER_API_URL` (optional, defaults to `https://api.winevoyager.tours`).
+Environment variables: `WINEVOYAGER_API_KEY` (optional), `WINEVOYAGER_API_URL` (optional, defaults to `https://api.winevoyager.tours`; must be `https`, plain `http` only for `localhost`).
+
+The key is sent only to that API URL: the server does not follow redirects, so it never forwards the key to another host.

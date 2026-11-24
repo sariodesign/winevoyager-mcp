@@ -11,7 +11,7 @@ import { findByGrape } from './grapes.js'
 import { summarizeRegions } from './regions.js'
 
 export const SERVER_NAME = 'winevoyager'
-export const SERVER_VERSION = '0.3.0'
+export const SERVER_VERSION = '0.3.1'
 
 const INSTRUCTIONS = `WineVoyager: verified data on the Italian DOP wine denominations (DOCG and DOC), read from the official MASAF disciplinari and cross-checked with the EU eAmbrosia register.
 
